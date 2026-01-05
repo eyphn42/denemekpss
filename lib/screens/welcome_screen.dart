@@ -2,134 +2,105 @@ import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 
+// import 'signup_screen.dart'; // Kayıt ekranını oluşturunca bu yorumu kaldır.
+
 class WelcomeScreen extends StatelessWidget {
+  // Tasarımdaki Renkler (login_screen.dart ile aynı)
+  final Color _kPurpleColor = Color(0xFF7E57C2);
+  final Color _kOrangeColor = Color(0xFFE67E22);
+  final Color _kBackgroundColor = Color(0xFFF0F0F0);
+
+  // Omnes Font Stili (Tutarlılık için)
+  TextStyle get _omnesStyle => TextStyle(
+        fontFamily: 'Omnes',
+        fontWeight: FontWeight.bold,
+      );
+
   @override
   Widget build(BuildContext context) {
+    // Ekranın genişliğini alarak padding'i ona göre ayarlayabiliriz
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = screenWidth > 400 ? 40.0 : 30.0;
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1CB0F6), // Duolingo mavisi
-              Color(0xFF58CC02), // Duolingo yeşili
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(24.0),
+      backgroundColor: _kBackgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding, vertical: 20.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Spacer(),
-                
-                // Logo
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.school_rounded,
-                    size: 60,
-                    color: Color(0xFF1CB0F6),
-                  ),
-                ),
-                
-                SizedBox(height: 40),
-                
-                // Başlık
+                // 1. LOGO
+                // Eğer logo resmini assets'e eklediysen alttaki satırı aç, diğerini sil.
+                Image.asset('assets/images/zeo_logo.png', height: 160),
+
+                // 2. BAŞLIK
                 Text(
-                  'KPSS Öğrenme',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  'hoşgeldin',
+                  style: _omnesStyle.copyWith(
+                    fontSize: 34,
+                    color: _kPurpleColor,
                   ),
                 ),
-                
-                SizedBox(height: 16),
-                
-                Text(
-                  'Her gün 10 dakika ile\nhedefine ulaş! 🎯',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.5,
-                  ),
-                ),
-                
-                Spacer(),
-                
-                // Başla Butonu
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SignUpScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Color(0xFF1CB0F6),
-                    padding: EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+
+                SizedBox(height: 80),
+
+                // 3. KAYIT OL BUTONU
+                SizedBox(
+                  width: double.infinity,
+                  height: 65,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // YENİ: Kayıt ekranına yönlendir
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SignUpScreen()));
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kOrangeColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 5,
                     ),
-                    elevation: 5,
-                  ),
-                  child: Text(
-                    'BAŞLA',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+                    child: Text(
+                      'kayıt ol',
+                      style: _omnesStyle.copyWith(fontSize: 22),
                     ),
                   ),
                 ),
-                
-                SizedBox(height: 16),
-                
-                // Giriş Yap Butonu
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginScreen()),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+
+                SizedBox(height: 24), // Butonlar arası boşluk
+
+                // 4. ZATEN HESABIM VAR BUTONU
+                SizedBox(
+                  width: double.infinity,
+                  height: 65,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Giriş ekranına yönlendir
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kOrangeColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      elevation: 5,
                     ),
-                    side: BorderSide(color: Colors.white, width: 2),
-                  ),
-                  child: Text(
-                    'Zaten hesabım var',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      'zaten hesabım var',
+                      style: _omnesStyle.copyWith(fontSize: 22),
                     ),
                   ),
                 ),
-                
-                SizedBox(height: 40),
+                SizedBox(height: 40), // Alt boşluk
               ],
             ),
           ),

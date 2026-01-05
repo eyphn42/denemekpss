@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/simple_auth_service.dart';
+import '../services/auth_service.dart'; // SimpleAuthService yerine bunu kullanıyoruz
 import 'home_screen.dart';
+import 'signup_screen.dart'; // "Kayıt Ol" yönlendirmesi için
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
+  // --- KONTROLLER ---
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
-  bool _isLoading = false;
+
+  // --- ZEO TASARIM RENKLERİ ---
+  final Color _zeoPurple = const Color(0xFF8E54E9);
+  final Color _zeoOrange = const Color(0xFFE67E22);
+  final Color _backgroundColor = const Color(0xFFE0E0E0); // Gri Arka Plan
 
   @override
   void dispose() {
@@ -22,31 +28,52 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // --- GİRİŞ YAP FONKSİYONU ---
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      
-      final authService = Provider.of<SimpleAuthService>(context, listen: false);
-      final error = await authService.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lütfen e-posta ve şifrenizi girin")),
       );
-      
-      setState(() => _isLoading = false);
-      
-      if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } else {
-        // Başarılı giriş
+      return;
+    }
+
+    // Yükleniyor simgesi göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // Servisten giriş yapmasını iste
+    String? res = await authService.loginUser(
+      email: email,
+      password: password,
+    );
+
+    // İşlem bitince yükleniyor simgesini kapat
+    if (mounted) Navigator.of(context).pop();
+
+    if (res == "success") {
+      // Başarılıysa Ana Sayfaya git
+      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      }
+    } else {
+      // Hata varsa göster
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res ?? "Giriş başarısız"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -55,160 +82,208 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Color(0xFF2B2B2B)),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: _backgroundColor, // Özel gri arka plan
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(24.0),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(height: 20),
-                
+                // --- 1. LOGO ALANI ---
+                Image.asset(
+                  'assets/images/zeo_logo.png', // Senin yeni logo dosyan
+                  height: 120,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Logo yoksa metin göster (Yedek)
+                    return Text(
+                      'Zeo',
+                      style: TextStyle(
+                        fontFamily: 'Omnes',
+                        fontSize: 80,
+                        fontWeight: FontWeight.w900,
+                        color: _zeoPurple,
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 30),
+
+                // --- 2. BAŞLIK ---
                 Text(
-                  'Tekrar Hoş Geldin! 👋',
+                  'tekrar hoşgeldin',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontFamily: 'Omnes',
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2B2B2B),
+                    color: _zeoPurple,
                   ),
                 ),
-                
-                SizedBox(height: 8),
-                
-                Text(
-                  'Öğrenmeye kaldığın yerden devam et',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+
+                const SizedBox(height: 30),
+
+                // --- 3. E-POSTA KUTUSU ---
+                _buildZeoTextField(
+                  controller: _emailController,
+                  hintText: "E-posta",
+                  iconPath: 'assets/images/email_icon.png', // Senin ikonun
+                  iconData: Icons.email, // Yedek ikon
+                  inputType: TextInputType.emailAddress,
                 ),
-                
-                SizedBox(height: 50),
-                
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        enabled: !_isLoading,
-                        decoration: InputDecoration(
-                          labelText: 'E-posta',
-                          hintText: 'ornek@email.com',
-                          prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF1CB0F6)),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xFF1CB0F6), width: 2),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'E-posta gerekli';
-                          }
-                          if (!value.contains('@')) {
-                            return 'Geçerli bir e-posta girin';
-                          }
-                          return null;
-                        },
+
+                const SizedBox(height: 20),
+
+                // --- 4. ŞİFRE KUTUSU ---
+                _buildZeoTextField(
+                  controller: _passwordController,
+                  hintText: "Şifre",
+                  iconPath: 'assets/images/lock_icon.png', // Senin ikonun
+                  iconData: Icons.lock, // Yedek ikon
+                  obscureText: true,
+                ),
+
+                const SizedBox(height: 10),
+
+                // --- 5. ŞİFREMİ UNUTTUM & BENİ HATIRLA ---
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      // Şifre sıfırlama eklenebilir
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Yakında eklenecek!")),
+                      );
+                    },
+                    child: Text(
+                      'şifremi unuttum',
+                      style: TextStyle(
+                        fontFamily: 'Omnes',
+                        color: _zeoPurple,
+                        fontWeight: FontWeight.bold,
                       ),
-                      
-                      SizedBox(height: 16),
-                      
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: !_isPasswordVisible,
-                        enabled: !_isLoading,
-                        decoration: InputDecoration(
-                          labelText: 'Şifre',
-                          hintText: '••••••••',
-                          prefixIcon: Icon(Icons.lock_outline, color: Color(0xFF1CB0F6)),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                              color: Colors.grey,
-                            ),
-                            onPressed: () {
-                              setState(() => _isPasswordVisible = !_isPasswordVisible);
-                            },
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Color(0xFF1CB0F6), width: 2),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Şifre gerekli';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                
-                SizedBox(height: 30),
-                
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF58CC02),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 0,
                   ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          'Giriş Yap',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // --- 6. GİRİŞ YAP BUTONU ---
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _zeoOrange,
+                      foregroundColor: Colors.white,
+                      elevation: 5,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'GİRİŞ YAP',
+                      style: TextStyle(
+                        fontFamily: 'Omnes',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // --- 7. KAYIT OL YÖNLENDİRMESİ ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Hesabın yok mu? ",
+                      style: TextStyle(
+                          color: Colors.grey[600], fontFamily: 'Omnes'),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        // Kayıt ekranına git
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SignUpScreen()),
+                        );
+                      },
+                      child: Text(
+                        "Kayıt Ol",
+                        style: TextStyle(
+                          fontFamily: 'Omnes',
+                          color: _zeoPurple,
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // --- ÖZEL TEXTFIELD TASARIMI (Resim ve İkon Destekli) ---
+  Widget _buildZeoTextField({
+    required TextEditingController controller,
+    required String hintText,
+    String? iconPath, // Resim yolu (Opsiyonel)
+    IconData? iconData, // Yedek Flutter ikonu
+    bool obscureText = false,
+    TextInputType inputType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: inputType,
+      cursorColor: _zeoPurple,
+      style: const TextStyle(
+        fontFamily: 'Omnes',
+        fontWeight: FontWeight.w500,
+        fontSize: 18,
+      ),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          fontFamily: 'Omnes',
+          color: _zeoPurple.withOpacity(0.5),
+          fontSize: 16,
+        ),
+
+        // İKON KISMI: Asset varsa onu kullanır, yoksa Flutter ikonunu
+        prefixIcon: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: (iconPath != null)
+              ? Image.asset(
+                  iconPath,
+                  width: 24,
+                  height: 24,
+                  color: _zeoPurple, // İkon rengini mor yap
+                  errorBuilder: (c, e, s) => Icon(iconData, color: _zeoPurple),
+                )
+              : Icon(iconData, color: _zeoPurple),
+        ),
+
+        // Sadece alt çizgi (Zeo Tasarımı)
+        enabledBorder: UnderlineInputBorder(
+          borderSide:
+              BorderSide(color: _zeoPurple.withOpacity(0.5), width: 1.5),
+        ),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: _zeoPurple, width: 2.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
       ),
     );
   }

@@ -1,58 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'screens/welcome_screen.dart';
+
+// Sayfalarımızı çağırıyoruz
+import 'services/auth_service.dart';
+import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
-import 'services/simple_auth_service.dart';
+import 'screens/welcome_screen.dart'; // <-- BU SATIRIN OLDUĞUNDAN EMİN OL
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Kullanıcı daha önce giriş yapmış mı kontrol et
-  final prefs = await SharedPreferences.getInstance();
-  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  final userName = prefs.getString('userName');
-  
-  // Servisi oluştur ve başlangıç verilerini yükle
-  final authService = SimpleAuthService();
-  if (isLoggedIn && userName != null) {
-    // Servis içindeki durumu manuel güncelle ki Home ekranı doğru çalışsın
-    // Not: Gerçek bir app'te bu kısmı servisin içinde handle etmek daha iyidir
-    // ama şimdilik hızlı çözüm için buradayız.
-    await authService.loadUserData();
-  }
-  
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => authService),
-      ],
-      child: KPSSApp(isLoggedIn: isLoggedIn),
-    ),
-  );
+  await Firebase.initializeApp();
+
+  runApp(const MyApp());
 }
 
-class KPSSApp extends StatelessWidget {
-  final bool isLoggedIn;
-  
-  KPSSApp({required this.isLoggedIn});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KPSS Öğrenme',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: Color(0xFF1CB0F6),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Color(0xFF1CB0F6),
-          secondary: Color(0xFF58CC02),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'KPSS Pro',
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+          useMaterial3: true,
+          fontFamily: 'Omnes',
         ),
-        useMaterial3: true,
-        // Font ailesini burada belirtebiliriz (Google Fonts eklersek)
+        // --- İŞTE DEĞİŞTİRMEN GEREKEN YER BURASI ---
+        // Eskiden: home: const SignUpScreen(),
+        // Şimdi:
+        home: WelcomeScreen(),
       ),
-      // Eğer giriş yapılmışsa Home, yapılmamışsa Welcome ekranını aç
-      home: isLoggedIn ? HomeScreen() : WelcomeScreen(),
     );
   }
 }

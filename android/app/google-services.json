@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "875035404244",
+    "project_id": "yargi-kpss-plus",
+    "storage_bucket": "yargi-kpss-plus.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:875035404244:android:649b2f6b59f019ad045841",
+        "android_client_info": {
+          "package_name": "com.example.zeo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "875035404244-5hp19h1hpafr3pbrq38uj2haqka8d7rn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWFB4Jk1Nla5EmKVfRa3Xywpw-z8Sa_7c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "875035404244-5hp19h1hpafr3pbrq38uj2haqka8d7rn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "875035404244-8q24h87ed60e64sr3oaqkqnp4m34mo9d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.yargi-kpss-plus"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

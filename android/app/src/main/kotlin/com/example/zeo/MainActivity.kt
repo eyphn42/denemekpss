@@ -1,4 +1,4 @@
-package com.example.kpss_app
+package com.example.zeo
 
 import io.flutter.embedding.android.FlutterActivity
 

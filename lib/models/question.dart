@@ -1,25 +1,38 @@
+// DOSYA ADI: lib/models/question.dart
+
 class Question {
-  final String questionText;    // Sorunun metni
-  final List<String> options;   // Şıklar (A, B, C, D)
-  final int correctAnswerIndex; // Doğru cevabın sırası (0, 1, 2, 3)
+  final String id;
+  final String text;
+  final String? imageUrl;
+  final List<String> options;
+  final int answerIndex;
 
   Question({
-    required this.questionText,
+    required this.id,
+    required this.text,
+    this.imageUrl,
     required this.options,
-    required this.correctAnswerIndex,
+    required this.answerIndex,
   });
-}
 
-// Demo amaçlı sahte sorular
-final List<Question> demoQuestions = [
-  Question(
-    questionText: "Aşağıdakilerden hangisi 'Yazım Kuralları'na uygundur?",
-    options: ["Herşey güzel olacak", "Her şey güzel olacak", "Hersey güzel olacak", "Her-şey güzel olacak"],
-    correctAnswerIndex: 1, // İkinci şık doğru
-  ),
-  Question(
-    questionText: "Türkiye'nin başkenti neresidir?",
-    options: ["İstanbul", "İzmir", "Ankara", "Bursa"],
-    correctAnswerIndex: 2, // Üçüncü şık doğru
-  ),
-];
+  // Veritabanından gelen veriyi modele çevirir
+  factory Question.fromMap(String id, Map<String, dynamic> map) {
+    return Question(
+      id: id,
+      text: map['text'] ?? '',
+      imageUrl: _parseImage(map['image']),
+      options: List<String>.from(map['options'] ?? []),
+      answerIndex: map['correct_index'] ?? 0,
+    );
+  }
+
+  // Resim linkini almak için yardımcı fonksiyon
+  static String? _parseImage(dynamic imageField) {
+    if (imageField == null) return null;
+    if (imageField is String) return imageField;
+    if (imageField is List && imageField.isNotEmpty) {
+      return imageField[0]['downloadURL'];
+    }
+    return null;
+  }
+}
