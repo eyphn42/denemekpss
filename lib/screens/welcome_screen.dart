@@ -10,6 +10,8 @@ class WelcomeScreen extends StatelessWidget {
   final Color _kOrangeColor = Color(0xFFE67E22);
   final Color _kBackgroundColor = Color(0xFFF0F0F0);
 
+  WelcomeScreen({super.key});
+
   // Omnes Font Stili (Tutarlılık için)
   TextStyle get _omnesStyle => TextStyle(
         fontFamily: 'Omnes',
