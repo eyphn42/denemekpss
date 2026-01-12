@@ -64,7 +64,7 @@ class TopicsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: AppBar(
         title: Text(unit.title,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         backgroundColor: zeoPurple,
         foregroundColor: Colors.white,
         elevation: 0,

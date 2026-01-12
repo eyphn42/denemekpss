@@ -2600,7 +2600,7 @@ class _QuizScreenState extends State<QuizScreen> {
       // A. FLASHCARD
       if (question.type == QuestionType.flashcard) {
         return _buildStickyButton(
-            text: "SIRADAKİ KART",
+            text: "DEVAM ET",
             color: const Color(0xFF7D52A0), // zeoPurple
             onPressed: _nextQuestion);
       }

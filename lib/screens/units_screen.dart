@@ -46,7 +46,7 @@ class UnitsScreen extends StatelessWidget {
           bool isCourseUnlocked = false;
           if (userSnapshot.hasData && userSnapshot.data!.exists) {
             final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-            List<dynamic> rawList = userData['unlockedLessons'] ?? [];
+            List<dynamic> rawList = userData['lessonsUnlocked'] ?? [];
             List<String> unlockedList =
                 rawList.map((e) => e.toString().trim()).toList();
             if (unlockedList.contains(courseId)) isCourseUnlocked = true;
@@ -144,9 +144,9 @@ class UnitsScreen extends StatelessWidget {
               showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                          title: const Text("Kilitli Bölüm 🔒"),
+                          title: const Text("Ünite Kilitli 🔒"),
                           content: const Text(
-                              "Önceki bölümleri tamamlamanız veya dersi satın almanız gerekmektedir."),
+                              "Dersin Aktivasyon Kodunu Etkinleştirerek Kilidi Kaldırabilirsiniz."),
                           actions: [
                             TextButton(
                                 onPressed: () => Navigator.pop(ctx),
