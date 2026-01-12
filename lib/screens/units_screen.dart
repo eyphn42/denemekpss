@@ -1,195 +1,266 @@
 // DOSYA: lib/screens/units_screen.dart
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:kpss_app/models/models.dart';
-import 'package:kpss_app/data/data.dart';
-import 'profile_screen.dart';
-import 'topics_screen.dart'; // YENİ EKRAN BURADA
+import 'package:kpss_app/services/database_service.dart';
+import 'package:kpss_app/services/auth_service.dart';
+import 'topics_screen.dart';
 
-class UnitsScreen extends StatefulWidget {
-  final String courseId; // Örn: "turkce"
-  final String courseName; // Örn: "Türkçe"
+class UnitsScreen extends StatelessWidget {
+  final String courseId;
+  final String courseName;
 
   const UnitsScreen(
       {super.key, required this.courseId, required this.courseName});
 
   @override
-  State<UnitsScreen> createState() => _UnitsScreenState();
-}
-
-class _UnitsScreenState extends State<UnitsScreen> {
-  // Zeo Renkleri
-  final Color zeoPurple = const Color(0xFF7D52A0);
-  final Color zeoOrange = const Color(0xFFE67E22);
-
-  @override
   Widget build(BuildContext context) {
-    // 1. HomeScreen'den gelen ID ile Veri Tabanındaki Dersi Eşleştirme
-    Lesson? currentLesson;
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final String userId = FirebaseAuth.instance.currentUser!.uid;
 
-    // Basit bir eşleştirme mantığı:
-    if (widget.courseId == 'turkce') {
-      currentLesson = turkishLesson;
-    }
-    // Diğer dersler eklendikçe buraya 'else if' ile eklenecek.
-
-    // Eğer ders henüz data.dart içinde yoksa boş bir ekran göster
-    if (currentLesson == null) {
-      return Scaffold(
-        appBar:
-            AppBar(title: Text(widget.courseName), backgroundColor: zeoPurple),
-        body: const Center(child: Text("Bu dersin içeriği hazırlanıyor...")),
-      );
-    }
+    final Color zeoPurple = const Color(0xFF7D52A0);
+    final Color zeoOrange = const Color(0xFFE67E22);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5), // HomeScreen ile aynı gri ton
+      backgroundColor: const Color(0xFFF0F4F8), // Hafif gri-mavi arka plan
       appBar: AppBar(
-        title: Text(widget.courseName,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(courseName,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: zeoPurple,
         elevation: 0,
-        actions: [
-          // Kullanıcı kilit açmak isterse buradan Profile gidebilsin
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const ProfileScreen())).then((_) {
-                // Profil'den dönünce ekranı yenile (Kilit açıldıysa görünsün)
-                setState(() {});
-              });
-            },
-          )
-        ],
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
-        itemCount: currentLesson.units.length,
-        itemBuilder: (context, index) {
-          final unit = currentLesson!.units[index];
 
-          // --- KİLİT MANTIĞI ---
-          // Ünite bedava değilse VE Dersin kilidi açılmamışsa -> KİLİTLİDİR
-          bool isLocked = !unit.isFree && !currentLesson!.isProUnlocked;
+      // 1. KATMAN: KİLİT KONTROLÜ
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: authService.getUserStream(),
+        builder: (context, userSnapshot) {
+          if (userSnapshot.connectionState == ConnectionState.waiting)
+            return const Center(child: CircularProgressIndicator());
 
-          return _buildUnitPathNode(
-              unit, isLocked, index, currentLesson!.units.length);
+          bool isCourseUnlocked = false;
+          if (userSnapshot.hasData && userSnapshot.data!.exists) {
+            final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+            List<dynamic> rawList = userData['unlockedLessons'] ?? [];
+            List<String> unlockedList =
+                rawList.map((e) => e.toString().trim()).toList();
+            if (unlockedList.contains(courseId)) isCourseUnlocked = true;
+          }
+
+          // 2. KATMAN: İLERLEME VERİSİNİ DİNLE
+          return StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(userId)
+                .collection('progress')
+                .doc(courseId)
+                .snapshots(),
+            builder: (context, progressSnapshot) {
+              Map<String, dynamic> progressData = {};
+              if (progressSnapshot.hasData && progressSnapshot.data!.exists) {
+                progressData =
+                    progressSnapshot.data!.data() as Map<String, dynamic>;
+              }
+
+              // 3. KATMAN: ÜNİTELERİ LİSTELE
+              return StreamBuilder<List<Unit>>(
+                stream: DatabaseService().getUnits(courseId),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text("Ünite bulunamadı."));
+                  }
+
+                  final units = snapshot.data!;
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 40, horizontal: 20),
+                    itemCount: units.length,
+                    itemBuilder: (context, index) {
+                      final unit = units[index];
+                      bool isLocked = (index > 0) && !isCourseUnlocked;
+
+                      double progress = 0.0;
+                      String key = 'progress_${unit.id}';
+
+                      if (progressData.containsKey(key)) {
+                        progress = (progressData[key] as num).toDouble();
+                      }
+
+                      return _buildTimelineItem(
+                          context,
+                          unit,
+                          index,
+                          units.length,
+                          zeoOrange,
+                          zeoPurple,
+                          isLocked,
+                          progress);
+                    },
+                  );
+                },
+              );
+            },
+          );
         },
       ),
     );
   }
 
-  // Duolingo Tarzı Yol Düğümü Tasarımı
-  Widget _buildUnitPathNode(
-      Unit unit, bool isLocked, int index, int totalCount) {
+  // --- HER BİR ETKİNLİK İKONU VE YOLU ---
+  Widget _buildTimelineItem(
+      BuildContext context,
+      Unit unit,
+      int index,
+      int totalCount,
+      Color activeColor,
+      Color textColor,
+      bool isLocked,
+      double progress) {
+    bool isCompleted = progress >= 1.0;
+
+    // Her üniteye özel ikon belirleme (Modüler aritmetik ile döngüsel)
+    List<IconData> unitIcons = [
+      Icons.menu_book_rounded, // Kitap
+      Icons.psychology_rounded, // Beyin
+      Icons.edit_note_rounded, // Notlar
+      Icons.school_rounded, // Okul
+      Icons.emoji_events_rounded, // Kupa
+      Icons.lightbulb_rounded, // Fikir
+    ];
+    IconData currentIcon = unitIcons[index % unitIcons.length];
+
     return Column(
       children: [
+        // --- 1. ETKİNLİK İKONU (DOLUM EFEKTLİ) ---
         InkWell(
           onTap: () {
             if (isLocked) {
-              _showLockedDialog();
+              showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                          title: const Text("Kilitli Bölüm 🔒"),
+                          content: const Text(
+                              "Önceki bölümleri tamamlamanız veya dersi satın almanız gerekmektedir."),
+                          actions: [
+                            TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text("Tamam"))
+                          ]));
             } else {
-              // --- GÜNCELLENEN KISIM BURASI ---
-              // Artık Quiz'e değil, Konular Listesine (TopicsScreen) gidiyoruz
               Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TopicsScreen(unit: unit),
-                ),
-              );
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          TopicsScreen(unit: unit, courseId: courseId)));
             }
           },
-          borderRadius: BorderRadius.circular(100), // Yuvarlak tıklama efekti
+          borderRadius:
+              BorderRadius.circular(100), // Tıklama efekti yuvarlak olsun
           child: Container(
-            padding: const EdgeInsets.all(4), // Dış çerçeve boşluğu
+            width: 90,
+            height: 90,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: isLocked ? Colors.grey : zeoOrange, width: 3),
-            ),
-            child: CircleAvatar(
-              radius: 40, // Dairenin büyüklüğü
-              backgroundColor: isLocked ? Colors.grey[300] : zeoOrange,
-              child: Icon(
-                isLocked ? Icons.lock : Icons.star,
+                shape: BoxShape.circle,
                 color: Colors.white,
-                size: 35,
-              ),
-            ),
+                // Kilitli değilse gölge ekle
+                boxShadow: isLocked
+                    ? []
+                    : [
+                        BoxShadow(
+                            color: activeColor.withOpacity(0.2),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8))
+                      ],
+                border: Border.all(
+                    color: isLocked
+                        ? Colors.grey.shade300
+                        : (isCompleted ? Colors.green : Colors.white),
+                    width: 3)),
+            child: isLocked
+                // DURUM A: KİLİTLİ (GRİ ASMA KİLİT)
+                ? const Icon(Icons.lock, color: Colors.grey, size: 35)
+
+                // DURUM B: AÇIK (DOLUM EFEKTLİ İKON)
+                : Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 1. Katman: Gri (Boş) İkon
+                      Icon(currentIcon, size: 45, color: Colors.grey.shade200),
+
+                      // 2. Katman: Renkli (Dolu) İkon + Kırpma (Clip)
+                      // Progress 0.0 ise hiç görünmez, 0.5 ise yarısı görünür.
+                      ClipRect(
+                        child: Align(
+                          alignment:
+                              Alignment.bottomCenter, // Aşağıdan yukarı dolar
+                          heightFactor: progress > 0 ? progress : 0,
+                          child: Icon(currentIcon,
+                              size: 45,
+                              color: isCompleted ? Colors.green : activeColor),
+                        ),
+                      ),
+
+                      // %100 bittiyse küçük bir tik işareti ekleyelim
+                      if (isCompleted)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                                color: Colors.green, shape: BoxShape.circle),
+                            child: const Icon(Icons.check,
+                                color: Colors.white, size: 12),
+                          ),
+                        )
+                    ],
+                  ),
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
 
-        // Ünite Başlığı
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-              color: isLocked ? Colors.grey[300] : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                if (!isLocked)
-                  BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
-                      blurRadius: 5,
-                      offset: const Offset(0, 3))
-              ]),
-          child: Text(
-            unit.title,
-            style: TextStyle(
+        // --- 2. BAŞLIK VE YÜZDE ---
+        Text(
+          unit.title,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isLocked ? Colors.grey[600] : zeoPurple,
+              color: isLocked ? Colors.grey : Colors.black87),
+        ),
+        if (!isLocked && progress > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              "%${(progress * 100).toInt()}",
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: isCompleted ? Colors.green : activeColor),
             ),
           ),
-        ),
 
-        // Aşağı inen yol çizgisi (Son eleman hariç)
+        // --- 3. YOL ÇİZGİSİ (SONUNCU HARİÇ) ---
         if (index < totalCount - 1)
           Container(
-            height: 40,
-            width: 6,
-            margin: const EdgeInsets.symmetric(vertical: 5),
+            height: 50,
+            width: 6, // Yol kalınlığı
+            margin: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(3),
-            ),
+                // Eğer bu ünite bittiyse yol yeşil olsun, yoksa gri/kesikli
+                color: isCompleted
+                    ? Colors.green.withOpacity(0.3)
+                    : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(3)),
           ),
       ],
-    );
-  }
-
-  // Kilitli Ünite Uyarısı
-  void _showLockedDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("🔒 Kilitli İçerik"),
-        content: const Text(
-            "Bu üniteye erişmek için 'Pro Kodu' girmelisiniz.\nSağ üstteki profil ikonuna tıklayıp kodu girebilirsiniz."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Tamam"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Diyaloğu kapat
-              // Profil ekranına git
-              Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const ProfileScreen()))
-                  .then((_) => setState(() {}));
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: zeoPurple, foregroundColor: Colors.white),
-            child: const Text("Profile Git"),
-          )
-        ],
-      ),
     );
   }
 }

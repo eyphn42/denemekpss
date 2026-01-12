@@ -12,12 +12,21 @@ dependencies:
     sdk: flutter
   firebase_core: ^4.3.0
   firebase_auth: ^6.1.3
-  cloud_firestore: ^6.1.1  
+  cloud_firestore: ^6.1.1   
   # Ekledigimiz kütüphaneler
   cupertino_icons: ^1.0.6
   shared_preferences: ^2.2.2
   provider: ^6.1.1
   http: ^1.6.0
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
+  flutter_widget_from_html: ^0.17.1
+  flutter_math_fork: ^0.7.4
+  firebase_storage: ^13.0.5
+  image_picker: ^0.8.7+5
+  flutter_native_splash: ^2.4.7
+  lottie: ^3.3.2
 
 dev_dependencies:
   flutter_test:
@@ -30,15 +39,35 @@ flutter:
 
   # Görselleri buraya ekliyoruz
   assets:
-    - assets/images/
+    - assets/images/zeologo_appbar.png
+    - assets/images/zeo_logo.png
+    - assets/images/splash.json
+    # Font klasörünü asset olarak da belirtmek bazen garanti olur
+    - assets/fonts/ 
+
   fonts:
+    # 1. Ana Font (Omnes)
     - family: Omnes
       fonts:
         - asset: assets/fonts/Omnes Bold.ttf
           weight: 700  # Bold olduğu için 700 dedik
 
+    # 2. Sınav Soruları İçin Font (Arial)
+    - family: Arial
+      fonts:
+        - asset: assets/fonts/arial.ttf
+        
+        - asset: assets/fonts/arialbold.ttf
+          weight: 700
+          
+        - asset: assets/fonts/arialbolditalic.ttf
+          weight: 700
+          style: italic
+
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo.png"
-  min_sdk_android: 21 # Bunu eklemek yeni androidlerde hata almanı önler
+  image_path: "assets/images/icon.png"
+  adaptive_icon_background: "#EA7B1F" # ZEO Purple renginiz
+  adaptive_icon_foreground: "assets/images/icon.png"
+  min_sdk_android: 21

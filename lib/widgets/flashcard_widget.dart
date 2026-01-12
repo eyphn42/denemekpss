@@ -1,6 +1,6 @@
 // lib/widgets/flashcard_widget.dart
 import 'package:flutter/material.dart';
-import 'dart:math'; // Kartı döndürme efekti için
+// Kartı döndürme efekti için
 
 class FlashCardWidget extends StatefulWidget {
   // Bu verileri normalde veritabanından alacağız, şimdilik elle giriyoruz
